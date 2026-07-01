@@ -1,11 +1,35 @@
 import sys
 import os
 
+# Вывод справки
+def print_help():
+    help_text = """
+ОБЩИЙ ФОРМАТ:
+    python main.py <путь_к_папке> [-d <фильтр_папок>] [-f <фильтр_файлов>]
 
+ОПИСАНИЕ ПАРАМЕТРОВ:
+    <путь_к_папке>    - обязательный параметр, путь к папке, структуру которой нужно вывести
+    -d <фильтр_папок> - опциональный параметр, фильтр для папок (выводятся только папки, 
+                         содержащие указанную подстроку в названии)
+    -f <фильтр_файлов> - опциональный параметр, фильтр для файлов (выводятся только файлы,
+                         содержащие указанную подстроку в названии)
+
+ПРИМЕРЫ ВЫЗОВА:
+    python main.py /home/user/docs
+    python main.py /home/user/docs -d project
+    python main.py /home/user/docs -f .py
+    python main.py /home/user/docs -d src -f .txt
+
+ПРИМЕЧАНИЯ:
+    - Фильтры регистронезависимые
+    - Если корневая папка не соответствует фильтру папок, выводится предупреждение
+    - В отчёте выводится статистика по отфильтрованным элементам
+"""
+    print(help_text)
+
+# Рекурсивный обход папки с фильтрацией и сбором статистики
 def print_directory_structure(path, indent=0, prefix="", folder_filter="", file_filter="", is_root=False):
-    """
-    Рекурсивный обход папки с фильтрацией и сбором статистики
-    """
+
     stats = {
         'files': 0,
         'folders': 0,
@@ -45,15 +69,11 @@ def print_directory_structure(path, indent=0, prefix="", folder_filter="", file_
         # Проходим по всем элементам
         for i, item in enumerate(sorted_items):
             full_path = os.path.join(path, item)
-            is_last = (i == len(sorted_items) - 1)
+            # is_last = (i == len(sorted_items) - 1)
 
             # Определяем символы для отображения структуры
-            if is_last:
-                branch = "    "
-                next_prefix = prefix + "    "
-            else:
-                branch = "    "
-                next_prefix = prefix + "    "
+            branch = "    "
+            next_prefix = prefix + "    "
 
             # Обрабатываем папки
             if os.path.isdir(full_path):
@@ -97,11 +117,8 @@ def print_directory_structure(path, indent=0, prefix="", folder_filter="", file_
 
     return stats
 
-
+# Парсинг аргументов командной строки с проверкой корректности опций
 def parse_arguments():
-    """
-    Парсинг аргументов командной строки
-    """
     args = sys.argv[1:]
     folder_path = None
     folder_filter = ""
@@ -115,6 +132,11 @@ def parse_arguments():
         elif args[i] == '-f' and i + 1 < len(args):
             file_filter = args[i + 1]
             i += 2
+        elif args[i].startswith('-'):
+            # Обнаружена неизвестная опция
+            print(f"Ошибка: неизвестная опция '{args[i]}'")
+            print_help()
+            sys.exit(1)
         else:
             # Если это не опция, считаем, что это путь к папке
             if folder_path is None:
@@ -125,13 +147,18 @@ def parse_arguments():
 
 
 def main():
+    # Если аргументов нет, выводим справку
+    if len(sys.argv) == 1:
+        print_help()
+        sys.exit(0)
+
     # Парсим аргументы
     folder_path, folder_filter, file_filter = parse_arguments()
 
     # Проверяем, что передан путь к папке
     if folder_path is None:
         print("Ошибка: необходимо указать путь к папке")
-        print("Пример: python main.py /путь/к/папке [-d подстрока] [-f подстрока]")
+        print_help()
         sys.exit(1)
 
     # Проверяем, существует ли указанная папка
@@ -181,13 +208,11 @@ def main():
     print("Обход завершён")
 
     # Выводим отчёт
-    print("\n" + "=" * 50)
+    print("")
     print("ОТЧЁТ:")
-    print("=" * 50)
     print(f"Количество обнаруженных папок: {stats['folders']}")
     print(f"Количество обнаруженных файлов: {stats['files']}")
     print(f"Общий размер файлов: {stats['total_size']} байт")
-    print("=" * 50)
 
 
 if __name__ == "__main__":
